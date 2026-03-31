@@ -10,7 +10,7 @@ import cors from 'cors';
 // ============================================
 // CONFIGURATION
 // ============================================
-const WHATSAPP_TOKEN = 'EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY';
+const WHATSAPP_TOKEN = 'EAARpeqfyTZAgBRJ7eXWckutmO38nbi2rtTbFaZCVGWZBpR0XZBjR8WvyYh2MCnXnEnsPtw6fstP8eWsvdQhQuXoId9ZBmF4HYwgHcOGiGAjdIcAv17Sxrhn7Aqaf4wfYBaZAiNAn8GkUCsiHm6JsRMYXK6YJo9W3SywZC9Ai4iVLSOB16QZAOOZArLkJOANJZApKl1X62ApBVBWHmUBQytBsDoalFEWdWxbbxnHWP4KZAvuPcJAL50DcCkYmvLtzMWAtEMmf0uulTNiGT4iLHPXRsivdfmV';
 const PHONE_NUMBER_ID = '1021334914401055';
 const VERIFY_TOKEN = 'maroc_bot_2024';
 const WHATSAPP_API_VERSION = 'v18.0';
@@ -69,7 +69,7 @@ async function sendWhatsAppMessage(recipientPhone, message) {
 }
 
 // ============================================
-// CALL GEMINI API (Axios)
+// CALL GEMINI API (v1beta - supports systemInstruction)
 // ============================================
 async function getGeminiResponse(userMessage, userId) {
     try {
@@ -134,7 +134,6 @@ async function processMessage(senderPhone, messageBody) {
 // WEBHOOK ENDPOINTS
 // ============================================
 
-// Verification
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -149,7 +148,6 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// Receive Messages
 app.post('/webhook', async (req, res) => {
     const body = req.body;
 
@@ -176,7 +174,6 @@ app.post('/webhook', async (req, res) => {
     }
 });
 
-// Health Check
 app.get('/', (req, res) => {
     res.json({
         status: '✅ Bot Running',
