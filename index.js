@@ -3,7 +3,7 @@ const axios = require('axios'); // ضروري باش نصيفطو الرد
 const app = express().use(express.json());
 
 const VERIFY_TOKEN = "maroc_bot_2024";
-const ACCESS_TOKEN = "+1 555 160 2070"; // حط الرمز هنا
+const ACCESS_TOKEN = "EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY"; // حط الرمز هنا
 const PHONE_NUMBER_ID = "1021334914401055"; // حط المعرف هنا
 
 app.get('/webhook', (req, res) => {
