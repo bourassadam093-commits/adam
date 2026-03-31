@@ -3,8 +3,8 @@ const axios = require('axios'); // ضروري باش نصيفطو الرد
 const app = express().use(express.json());
 
 const VERIFY_TOKEN = "maroc_bot_2024";
-const ACCESS_TOKEN = "YOUR_TOKEN"; // حط الرمز هنا
-const PHONE_NUMBER_ID = "YOUR_PHONE_ID"; // حط المعرف هنا
+const ACCESS_TOKEN = "+1 555 160 2070"; // حط الرمز هنا
+const PHONE_NUMBER_ID = "1021334914401055"; // حط المعرف هنا
 
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
