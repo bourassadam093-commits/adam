@@ -1,15 +1,11 @@
 /**
  * WhatsApp Bot with Gemini AI - SYN Digital Services
- * Using Gemini Pro with v1 API
+ * Using gemini-2.0-flash with v1beta API
  */
 
 import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
-
-const app = express();
-app.use(cors());
-app.use(express.json());
 
 // ============================================
 // CONFIGURATION
@@ -19,10 +15,10 @@ const PHONE_NUMBER_ID = '1021334914401055';
 const VERIFY_TOKEN = 'maroc_bot_2024';
 const WHATSAPP_API_VERSION = 'v18.0';
 
-// Gemini API Configuration - Using gemini-pro with v1
-const GEMINI_API_KEY = 'AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4';
-const GEMINI_MODEL = 'gemini-pro';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+// Gemini API - Using gemini-2.0-flash with v1beta
+const GEMINI_API_KEY = 'AIzaSyCnleu99Z0gE9npnLTq-3o--u-0QdLj6UU';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // System prompt for Moroccan Darija
 const SYSTEM_PROMPT = `You are an AI assistant for SYN Digital Services (SYN للخدمات الرقمية), a Moroccan digital services company.
@@ -36,8 +32,12 @@ Guidelines:
 - Sign off as "SYN للخدمات الرقمية 🎯"
 - Company services: Web Development, Mobile Apps, Digital Marketing, IT Consulting`;
 
-// Conversation history storage
-const conversationHistory = new Map();
+// ============================================
+// EXPRESS APP
+// ============================================
+const app = express();
+app.use(cors());
+app.use(express.json());
 
 // ============================================
 // SEND MESSAGE TO WHATSAPP
@@ -60,84 +60,54 @@ async function sendWhatsAppMessage(recipientPhone, message) {
                 'Content-Type': 'application/json'
             }
         });
+        console.log('✅ Message sent:', response.data.message_id);
         return response.data;
     } catch (error) {
-        console.error('WhatsApp Error:', error.response?.data || error.message);
+        console.error('❌ WhatsApp Error:', error.response?.data || error.message);
         throw error;
     }
 }
 
 // ============================================
-// CALL GEMINI API (Axios - Manual HTTP Request)
+// CALL GEMINI API (Axios)
 // ============================================
 async function getGeminiResponse(userMessage, userId) {
-    // Get conversation history for user
-    if (!conversationHistory.has(userId)) {
-        conversationHistory.set(userId, []);
-    }
-    const history = conversationHistory.get(userId);
-
     try {
-        // Build request payload
         const requestPayload = {
-            contents: [
-                ...history.map(item => ({
-                    role: item.role,
-                    parts: [{ text: item.text }]
-                })),
-                {
-                    role: 'user',
-                    parts: [{ text: userMessage }]
-                }
-            ],
+            contents: [{
+                role: 'user',
+                parts: [{ text: userMessage }]
+            }],
             systemInstruction: {
                 parts: [{ text: SYSTEM_PROMPT }]
             },
             generationConfig: {
                 temperature: 0.9,
-                maxOutputTokens: 1000,
-                topP: 0.95,
-                topK: 40
+                maxOutputTokens: 1000
             }
         };
 
-        // API URL with API key as query parameter
         const url = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`;
+        console.log('🤖 Calling Gemini API:', GEMINI_MODEL);
 
-        console.log('🤖 Calling Gemini API (gemini-pro v1)...');
-
-        // Make request using Axios
         const response = await axios.post(url, requestPayload, {
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             timeout: 30000
         });
 
-        // Extract response text
         const responseText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!responseText) {
-            return "عذراً، مقدر نجاوب عليك فهاد الوقت. جرب مرة أخرى من بعد.";
-        }
-
-        // Update conversation history
-        history.push({ role: 'user', text: userMessage });
-        history.push({ role: 'model', text: responseText });
-
-        // Keep only last 10 exchanges
-        if (history.length > 20) {
-            history.shift();
-            history.shift();
+            return "عذراً، مقدر نجاوب عليك فهاد الوقت.";
         }
 
         return responseText;
 
     } catch (error) {
-        console.error('❌ Gemini API Error:', error.response?.data || error.message);
-        
+        console.error('❌ Gemini Error:', error.response?.data || error.message);
+
         if (error.response?.status === 404) {
-            return "عذراً، عندنا مشكل مع الخادم ديال الذكاء الاصطناعي. جرب مرة أخرى من بعد.";
+            return "عذراً، الموديل مابقاش متوفر. جرب مرة أخرى.";
         }
         if (error.response?.status === 429) {
             return "عذراً، الطلبات كثيرة شوية. استنى شوية وجرب من جديد.";
@@ -147,25 +117,24 @@ async function getGeminiResponse(userMessage, userId) {
 }
 
 // ============================================
-// PROCESS INCOMING MESSAGE
+// PROCESS MESSAGE
 // ============================================
 async function processMessage(senderPhone, messageBody) {
-    console.log(`📨 Message from ${senderPhone}: ${messageBody}`);
-    
+    console.log(`📨 ${senderPhone}: ${messageBody}`);
+
     try {
         const aiResponse = await getGeminiResponse(messageBody, senderPhone);
         await sendWhatsAppMessage(senderPhone, aiResponse);
     } catch (error) {
-        console.error('Process Error:', error);
-        await sendWhatsAppMessage(senderPhone, "عذراً، عندنا مشكل تقني.");
+        console.error('❌ Process Error:', error);
     }
 }
 
 // ============================================
-// WHATSAPP WEBHOOK ENDPOINTS
+// WEBHOOK ENDPOINTS
 // ============================================
 
-// GET /webhook - WhatsApp Verification
+// Verification
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -180,7 +149,7 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// POST /webhook - Receive Messages
+// Receive Messages
 app.post('/webhook', async (req, res) => {
     const body = req.body;
 
@@ -202,7 +171,7 @@ app.post('/webhook', async (req, res) => {
         }
         res.status(200).send('OK');
     } catch (error) {
-        console.error('Webhook Error:', error);
+        console.error('❌ Webhook Error:', error);
         res.sendStatus(500);
     }
 });
@@ -212,16 +181,16 @@ app.get('/', (req, res) => {
     res.json({
         status: '✅ Bot Running',
         service: 'SYN للخدمات الرقمية',
-        gemini: GEMINI_MODEL,
-        version: 'v1'
+        gemini: GEMINI_MODEL
     });
 });
 
 // ============================================
-// START SERVER
+// START
 // ============================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 SYN WhatsApp Bot running on port ${PORT}`);
-    console.log(`🤖 Using: ${GEMINI_MODEL} with v1 API`);
+    console.log(`🚀 SYN Bot running on port ${PORT}`);
+    console.log(`🤖 Gemini Model: ${GEMINI_MODEL}`);
+    console.log(`📱 Phone ID: ${PHONE_NUMBER_ID}`);
 });
