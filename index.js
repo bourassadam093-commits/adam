@@ -7,7 +7,7 @@ const app = express().use(express.json());
 const VERIFY_TOKEN = "maroc_bot_2024";
 const WHATSAPP_TOKEN = "EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY";
 const PHONE_NUMBER_ID = "1021334914401055"; 
-const genAI = new GoogleGenerativeAI("AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4");
+const GEMINI_KEY = "AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4";
 // -----------------
 
 app.get('/webhook', (req, res) => {
@@ -31,14 +31,17 @@ app.post('/webhook', async (req, res) => {
 
             console.log(`[SYN-BOT] ميساج: ${userText}`);
 
-            // استخدام المكتبة الرسمية
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            // التعديل هنا: فرضنا استخدام v1beta
+            const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-1.5-flash",
+                apiVersion: "v1beta" 
+            });
+
             const prompt = `أنت مساعد ذكي لشركة SYN مغربي. جاوب بالدارجة: ${userText}`;
-            
             const result = await model.generateContent(prompt);
             const aiReply = result.response.text();
 
-            // إرسال الرد
             await axios({
                 method: "POST",
                 url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
@@ -52,9 +55,9 @@ app.post('/webhook', async (req, res) => {
         }
         res.sendStatus(200);
     } catch (error) {
-        console.error("خطأ:", error.message);
+        console.error("خطأ Gemini:", error.message);
         res.sendStatus(200);
     }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('🚀 SYN AI Bot is LIVE with Official SDK!'));
+app.listen(process.env.PORT || 3000, () => console.log('🚀 Bot is ready!'));
