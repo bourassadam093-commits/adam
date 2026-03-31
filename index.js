@@ -9,7 +9,6 @@ const PHONE_NUMBER_ID = "1021334914401055";
 const GEMINI_API_KEY = "AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4";
 // ---------------------------------
 
-// التحقق من الـ Webhook
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -21,7 +20,6 @@ app.get('/webhook', (req, res) => {
     }
 });
 
-// استقبال الميساجات والرد عليها بالذكاء الاصطناعي
 app.post('/webhook', async (req, res) => {
     try {
         const body = req.body;
@@ -32,8 +30,9 @@ app.post('/webhook', async (req, res) => {
 
             console.log(`[SYN-BOT] ميساج من ${from}: ${userText}`);
 
-            // 1. طلب الجواب من Gemini AI بلهجة مغربية
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // التعديل هنا: استعملنا v1 بلاصة v1beta
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            
             const geminiResponse = await axios.post(geminiUrl, {
                 contents: [{
                     parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية متخصصة في المونتاج وكتابة المحتوى). جاوب الكليان بالدارجة المغربية بأسلوب مهني، ذكي، ومؤدب. السؤال هو: ${userText}` }]
@@ -42,7 +41,6 @@ app.post('/webhook', async (req, res) => {
 
             const aiReply = geminiResponse.data.candidates[0].content.parts[0].text;
 
-            // 2. إرسال الرد لواتساب
             await axios({
                 method: "POST",
                 url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
@@ -56,7 +54,8 @@ app.post('/webhook', async (req, res) => {
         }
         res.sendStatus(200);
     } catch (error) {
-        console.error("خطأ:", error.response ? JSON.stringify(error.response.data) : error.message);
+        // غانطبعو الخطأ بشكل واضح في Render باش نراقبوه
+        console.error("خطأ مفصل:", error.response ? JSON.stringify(error.response.data) : error.message);
         res.sendStatus(200);
     }
 });
