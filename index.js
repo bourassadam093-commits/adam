@@ -2,12 +2,10 @@ const express = require('express');
 const axios = require('axios');
 const app = express().use(express.json());
 
-// --- إعدادات الحساب ---
 const VERIFY_TOKEN = "maroc_bot_2024";
 const WHATSAPP_TOKEN = "EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY";
 const PHONE_NUMBER_ID = "1021334914401055"; 
 const GEMINI_API_KEY = "AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4";
-// --------------------
 
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
@@ -30,15 +28,13 @@ app.post('/webhook', async (req, res) => {
 
             console.log(`[SYN-BOT] ميساج من ${from}: ${userText}`);
 
-            // التعديل السحري هنا: استعملنا النسخة v1beta مع تحديد الموديل بشكل أدق
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // التعديل الجذري في الرابط: جرب هاد الصيغة اللي هي الأصح للموديل flash
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
             
             const geminiResponse = await axios.post(geminiUrl, {
                 contents: [{
-                    parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية متخصصة في المونتاج وكتابة المحتوى). جاوب الكليان بالدارجة المغربية بأسلوب مهني ومؤدب. السؤال هو: ${userText}` }]
+                    parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية). جاوب بالدارجة المغربية: ${userText}` }]
                 }]
-            }, {
-                headers: { 'Content-Type': 'application/json' }
             });
 
             if (geminiResponse.data.candidates && geminiResponse.data.candidates[0].content) {
@@ -58,4 +54,10 @@ app.post('/webhook', async (req, res) => {
         }
         res.sendStatus(200);
     } catch (error) {
-        console.error("خطأ Gemini:", error.response ? JSON
+        // هاد السطر غادي يطبع لينا السبب الحقيقي إيلا فشل Gemini
+        console.log("Error Details:", error.response ? JSON.stringify(error.response.data) : error.message);
+        res.sendStatus(200);
+    }
+});
+
+app.listen(process.env.PORT || 3000, () => console.log('🚀 SYN AI Bot is ready!'));
