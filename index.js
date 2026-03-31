@@ -1,11 +1,14 @@
 const express = require('express');
 const axios = require('axios');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express().use(express.json());
 
+// --- الإعدادات ---
 const VERIFY_TOKEN = "maroc_bot_2024";
 const WHATSAPP_TOKEN = "EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY";
 const PHONE_NUMBER_ID = "1021334914401055"; 
-const GEMINI_API_KEY = "AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4";
+const genAI = new GoogleGenerativeAI("AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4");
+// -----------------
 
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
@@ -26,38 +29,32 @@ app.post('/webhook', async (req, res) => {
             const from = msg.from;
             const userText = msg.text.body;
 
-            console.log(`[SYN-BOT] ميساج من ${from}: ${userText}`);
+            console.log(`[SYN-BOT] ميساج: ${userText}`);
 
-            // التعديل الجذري في الرابط: جرب هاد الصيغة اللي هي الأصح للموديل flash
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+            // استخدام المكتبة الرسمية
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const prompt = `أنت مساعد ذكي لشركة SYN مغربي. جاوب بالدارجة: ${userText}`;
             
-            const geminiResponse = await axios.post(geminiUrl, {
-                contents: [{
-                    parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية). جاوب بالدارجة المغربية: ${userText}` }]
-                }]
+            const result = await model.generateContent(prompt);
+            const aiReply = result.response.text();
+
+            // إرسال الرد
+            await axios({
+                method: "POST",
+                url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+                data: {
+                    messaging_product: "whatsapp",
+                    to: from,
+                    text: { body: aiReply }
+                },
+                headers: { "Authorization": `Bearer ${WHATSAPP_TOKEN}` }
             });
-
-            if (geminiResponse.data.candidates && geminiResponse.data.candidates[0].content) {
-                const aiReply = geminiResponse.data.candidates[0].content.parts[0].text;
-
-                await axios({
-                    method: "POST",
-                    url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-                    data: {
-                        messaging_product: "whatsapp",
-                        to: from,
-                        text: { body: aiReply }
-                    },
-                    headers: { "Authorization": `Bearer ${WHATSAPP_TOKEN}` }
-                });
-            }
         }
         res.sendStatus(200);
     } catch (error) {
-        // هاد السطر غادي يطبع لينا السبب الحقيقي إيلا فشل Gemini
-        console.log("Error Details:", error.response ? JSON.stringify(error.response.data) : error.message);
+        console.error("خطأ:", error.message);
         res.sendStatus(200);
     }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('🚀 SYN AI Bot is ready!'));
+app.listen(process.env.PORT || 3000, () => console.log('🚀 SYN AI Bot is LIVE with Official SDK!'));
