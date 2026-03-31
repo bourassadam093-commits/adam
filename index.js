@@ -2,12 +2,12 @@ const express = require('express');
 const axios = require('axios');
 const app = express().use(express.json());
 
-// --- إعدادات الحساب (كلشي واجد) ---
+// --- إعدادات الحساب ---
 const VERIFY_TOKEN = "maroc_bot_2024";
 const WHATSAPP_TOKEN = "EAARpeqfyTZAgBRFPYIR3dXVGsEkMDXPZAYfxerdhKqjc2Yq0NCNuZBdoAKzbOZA8yXLjSWmZBF7a6APHKFhVN4b0dIr99BRjIcDokYTzeBbSIx0wiZADjYMFi4949Fbp2Sb7pucvugQzk7ocnisg1udYtzZA5PkUnZCqZC0nTDkLYGIgdcXOm0HhBrothJmFBxIZAwjhXqYX4zwgzFFZBzcer9KaRcb8k4CyZCivwYZAEthfplmWCNlaCFxSJ0juFh7YYzQ96hQZBsbmW7ZBhD9OmrCvT8PnsZCY";
 const PHONE_NUMBER_ID = "1021334914401055"; 
 const GEMINI_API_KEY = "AIzaSyBWzUiqUc_CDtSviHcJZJf4jfupHde81I4";
-// ---------------------------------
+// --------------------
 
 app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
@@ -30,34 +30,32 @@ app.post('/webhook', async (req, res) => {
 
             console.log(`[SYN-BOT] ميساج من ${from}: ${userText}`);
 
-            // التعديل هنا: استعملنا v1 بلاصة v1beta
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // التعديل السحري هنا: استعملنا النسخة v1beta مع تحديد الموديل بشكل أدق
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
             const geminiResponse = await axios.post(geminiUrl, {
                 contents: [{
-                    parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية متخصصة في المونتاج وكتابة المحتوى). جاوب الكليان بالدارجة المغربية بأسلوب مهني، ذكي، ومؤدب. السؤال هو: ${userText}` }]
+                    parts: [{ text: `أنت مساعد ذكي لشركة SYN (وكالة خدمات رقمية مغربية متخصصة في المونتاج وكتابة المحتوى). جاوب الكليان بالدارجة المغربية بأسلوب مهني ومؤدب. السؤال هو: ${userText}` }]
                 }]
+            }, {
+                headers: { 'Content-Type': 'application/json' }
             });
 
-            const aiReply = geminiResponse.data.candidates[0].content.parts[0].text;
+            if (geminiResponse.data.candidates && geminiResponse.data.candidates[0].content) {
+                const aiReply = geminiResponse.data.candidates[0].content.parts[0].text;
 
-            await axios({
-                method: "POST",
-                url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
-                data: {
-                    messaging_product: "whatsapp",
-                    to: from,
-                    text: { body: aiReply }
-                },
-                headers: { "Authorization": `Bearer ${WHATSAPP_TOKEN}` }
-            });
+                await axios({
+                    method: "POST",
+                    url: `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+                    data: {
+                        messaging_product: "whatsapp",
+                        to: from,
+                        text: { body: aiReply }
+                    },
+                    headers: { "Authorization": `Bearer ${WHATSAPP_TOKEN}` }
+                });
+            }
         }
         res.sendStatus(200);
     } catch (error) {
-        // غانطبعو الخطأ بشكل واضح في Render باش نراقبوه
-        console.error("خطأ مفصل:", error.response ? JSON.stringify(error.response.data) : error.message);
-        res.sendStatus(200);
-    }
-});
-
-app.listen(process.env.PORT || 3000, () => console.log('🚀 SYN AI Bot is ready to chat!'));
+        console.error("خطأ Gemini:", error.response ? JSON
